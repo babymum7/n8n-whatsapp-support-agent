@@ -31,9 +31,9 @@ flowchart LR
   web["Web chat"] --> cc["Channel: hosted chat"]
   cw --> agent["Support agent"]
   cc --> agent
+  agent -- lookup_purchases --> lookup["Tool: purchase lookup"]
   agent -- hand_off --> handoff["Tool: hand off to the team"]
   handoff --> tickets[("Data Table: support_tickets")]
-  agent -- lookup_purchases --> lookup["Tool: purchase lookup"]
   agent -- search_faq --> store[("FAQ vector store")]
   docs["knowledge/*.md"] --> ingest["Knowledge ingest"] --> store
 ```
