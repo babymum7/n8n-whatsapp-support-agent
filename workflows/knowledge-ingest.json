@@ -1,0 +1,193 @@
+{
+  "id": "waKnowledgeIngst",
+  "name": "Knowledge ingest",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "461b0e53-6d8d-509e-b573-8afd9ddf7882",
+      "name": "When n8n starts",
+      "type": "n8n-nodes-base.n8nTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -90
+      ],
+      "parameters": {
+        "events": [
+          "init",
+          "activate"
+        ]
+      }
+    },
+    {
+      "id": "73c359af-4b7d-5659-b5d7-84d9998f2e34",
+      "name": "Re-ingest by hand",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        90
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "040c518d-6f63-525c-9947-bcbb3d133288",
+      "name": "Read FAQ files",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/home/node/.n8n-files/knowledge/*.md",
+        "options": {}
+      }
+    },
+    {
+      "id": "be7fc0f7-44d0-5ff2-8449-365f21dbfee5",
+      "name": "Store in vector memory",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "support-faq",
+          "cachedResultName": "support-faq"
+        },
+        "clearStore": true,
+        "embeddingBatchSize": 1000
+      },
+      "notes": "Replaces the whole store on each run. One batch holds up to 1000 chunks."
+    },
+    {
+      "id": "19a6c3c0-4495-51ec-b972-ff309755fee8",
+      "name": "FAQ embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        400,
+        220
+      ],
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "credentials": {
+        "ollamaApi": {
+          "id": "waOllamaLocal001",
+          "name": "Ollama (local)"
+        }
+      }
+    },
+    {
+      "id": "6fbffeb4-59d5-5210-abaf-e1acb9f3f6fd",
+      "name": "Load as documents",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        580,
+        220
+      ],
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "allInputData",
+        "loader": "textLoader",
+        "textSplittingMode": "custom",
+        "options": {}
+      }
+    },
+    {
+      "id": "f4447702-6b6b-52cc-86f3-992c3d228965",
+      "name": "Split into chunks",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        660,
+        420
+      ],
+      "parameters": {
+        "chunkSize": 900,
+        "chunkOverlap": 120,
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "When n8n starts": {
+      "main": [
+        [
+          {
+            "node": "Read FAQ files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-ingest by hand": {
+      "main": [
+        [
+          {
+            "node": "Read FAQ files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read FAQ files": {
+      "main": [
+        [
+          {
+            "node": "Store in vector memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAQ embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Store in vector memory",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load as documents": {
+      "ai_document": [
+        [
+          {
+            "node": "Store in vector memory",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into chunks": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Load as documents",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

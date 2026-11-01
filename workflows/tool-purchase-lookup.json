@@ -1,0 +1,57 @@
+{
+  "id": "waToolPurchases1",
+  "name": "Tool: purchase lookup",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "c15e2d49-a63b-57fa-8546-39e9f56d0bb6",
+      "name": "Called with phone",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "phone",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6774c525-a684-5fef-bb7d-496d4cbe4d3e",
+      "name": "Find payments for this phone",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Sample payments shaped like items from Razorpay's GET /v1/payments\n// (amounts in paise, times in Unix seconds). To go live, replace this node with\n// an HTTP Request to Razorpay that lists payments for the caller; see README.\nconst PAYMENTS = [\n  { id: 'pay_Qd7Lm2Xa9Kp4Tz', order_id: 'order_Qd7Kw1Va5Ls8Pe', amount: 149900, currency: 'INR', status: 'captured', method: 'upi', email: 'asha@customer.example', contact: '+911000000001', created_at: 1793162700, notes: { product: '21-Day Breathwork Reset' }, refund_status: null },\n  { id: 'pay_Qd7Kx8Rb3Nw6Hc', order_id: 'order_Qd7Kw1Va5Ls8Pe', amount: 149900, currency: 'INR', status: 'failed', method: 'card', email: 'asha@customer.example', contact: '+911000000001', created_at: 1793162520, notes: { product: '21-Day Breathwork Reset' }, refund_status: null, error_description: 'Payment declined by the bank' },\n  { id: 'pay_Qa2Vn6Ty1Gm8Rd', order_id: 'order_Qa2Vm3Ce7Jx2Lb', amount: 79900, currency: 'INR', status: 'refunded', method: 'upi', email: 'ravi@customer.example', contact: '+911000000002', created_at: 1792591800, notes: { product: 'Sleep Better Audio Pack' }, refund_status: 'full' },\n  { id: 'pay_Qe4Hs9Wk5Bc2Mn', order_id: 'order_Qe4Hr7Dz3Qy6Fv', amount: 99900, currency: 'INR', status: 'captured', method: 'netbanking', email: 'meera@customer.example', contact: '+911000000003', created_at: 1793327700, notes: { product: 'Desk Yoga Video Course' }, refund_status: null },\n];\n\nconst ACCESS = { captured: 'active', refunded: 'removed after the refund', failed: 'none, the payment did not complete' };\n\n// One number, many spellings: \"+91 10000 00001\", \"911000000001\", \"1000000001\".\nconst normalize = (phone) => {\n  const digits = String(phone ?? '').replace(/\\D/g, '');\n  return digits.length === 10 ? `91${digits}` : digits;\n};\n\nconst caller = normalize($input.first().json.phone);\nconst purchases = caller.length < 11 ? [] : PAYMENTS\n  .filter((payment) => normalize(payment.contact) === caller)\n  .map((payment) => ({\n    payment_id: payment.id,\n    order_id: payment.order_id,\n    product: payment.notes.product,\n    amount_inr: `₹${(payment.amount / 100).toLocaleString('en-IN')}`,\n    status: payment.status,\n    method: payment.method,\n    date: new Date(payment.created_at * 1000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),\n    access: ACCESS[payment.status],\n    refund_status: payment.refund_status,\n    ...(payment.error_description ? { failure_reason: payment.error_description } : {}),\n  }));\n\nreturn [{ json: { found: purchases.length > 0, purchases } }];\n"
+      },
+      "notes": "Sample data. Swap for an HTTP Request to Razorpay to go live."
+    }
+  ],
+  "connections": {
+    "Called with phone": {
+      "main": [
+        [
+          {
+            "node": "Find payments for this phone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

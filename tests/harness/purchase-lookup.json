@@ -1,0 +1,72 @@
+{
+  "id": "waTestPurchases1",
+  "name": "Test: purchase lookup",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "6a0e4f6e-1d55-4c1b-9a51-0c1f0c3b7a01",
+      "name": "Run",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "6a0e4f6e-1d55-4c1b-9a51-0c1f0c3b7a02",
+      "name": "Cases",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "parameters": {
+        "jsCode": "return [\n  { json: { case: 'asha-international', phone: '+91 10000 00001' } },\n  { json: { case: 'asha-whatsapp', phone: '911000000001' } },\n  { json: { case: 'asha-local', phone: '1000000001' } },\n  { json: { case: 'unknown', phone: '+91 10000 00099' } },\n  { json: { case: 'empty', phone: '' } },\n];"
+      }
+    },
+    {
+      "id": "6a0e4f6e-1d55-4c1b-9a51-0c1f0c3b7a03",
+      "name": "Lookup",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [440, 0],
+      "parameters": {
+        "workflowId": { "__rl": true, "mode": "id", "value": "waToolPurchases1" },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": { "phone": "={{ $json.phone }}" },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": { "waitForSubWorkflow": true }
+      }
+    },
+    {
+      "id": "6a0e4f6e-1d55-4c1b-9a51-0c1f0c3b7a04",
+      "name": "Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0],
+      "parameters": {
+        "jsCode": "const cases = $('Cases').all();\nreturn $input.all().map((item, i) => ({ json: { case: cases[i].json.case, result: item.json } }));"
+      }
+    }
+  ],
+  "connections": {
+    "Run": { "main": [[{ "node": "Cases", "type": "main", "index": 0 }]] },
+    "Cases": { "main": [[{ "node": "Lookup", "type": "main", "index": 0 }]] },
+    "Lookup": { "main": [[{ "node": "Results", "type": "main", "index": 0 }]] }
+  }
+}

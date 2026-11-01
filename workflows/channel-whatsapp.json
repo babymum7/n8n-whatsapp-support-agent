@@ -1,0 +1,289 @@
+{
+  "id": "waChannelWhatsAp",
+  "name": "Channel: WhatsApp (needs Meta credentials)",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "f190024b-5ddb-5b5d-8170-d3cc1cd7503e",
+      "name": "WhatsApp message received",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {
+          "messageStatusUpdates": []
+        }
+      },
+      "webhookId": "0c3f6d8a-27b4-4e1a-9f55-8d2b7a6e1c40",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "waWhatsAppTrig01",
+          "name": "WhatsApp trigger (Meta app)"
+        }
+      },
+      "notes": "Status updates (sent, delivered, read) are dropped here, so they never start an execution."
+    },
+    {
+      "id": "08f68844-41dd-5f56-b506-116e2307c85e",
+      "name": "Is it text?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0c24d69d-1256-53aa-b1ba-3ea712131ad3",
+              "leftValue": "={{ $json.messages?.[0]?.type }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "87083957-53a8-5519-a8ec-b3bae41f037d",
+      "name": "From WhatsApp",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        -100
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cbe025bf-e9d6-5d6c-a885-aa4c2b97cac1",
+              "name": "text",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "664b40b0-528e-5f44-b33f-9c9acdea33b1",
+              "name": "session_id",
+              "value": "=whatsapp:{{ $json.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "86b9f458-f26f-5add-8673-ae8c75d7dc24",
+              "name": "phone",
+              "value": "=+{{ $json.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "687372d4-9808-5056-bb8e-439689420b24",
+              "name": "channel",
+              "value": "whatsapp",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "1807b037-33ff-59d6-8b0a-96c3ed04a68e",
+      "name": "Ask the support agent",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        -100
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "waSupportAgent01"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.text }}",
+            "session_id": "={{ $json.session_id }}",
+            "phone": "={{ $json.phone }}",
+            "channel": "={{ $json.channel }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "d8efe182-e4db-55c4-9188-40a0fb89a1ce",
+      "name": "Send the reply",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        -100
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "={{ $('WhatsApp message received').first().json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('From WhatsApp').first().json.phone }}",
+        "messageType": "text",
+        "textBody": "={{ $json.reply }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "id": "waWhatsAppSend01",
+          "name": "WhatsApp Cloud API"
+        }
+      }
+    },
+    {
+      "id": "7428b85e-ba59-5eac-b57f-dbe4a8957c2a",
+      "name": "Ask for text",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        120
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "={{ $json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "=+{{ $json.messages[0].from }}",
+        "messageType": "text",
+        "textBody": "Sorry, I can only read text messages for now. Please type your question.",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "id": "waWhatsAppSend01",
+          "name": "WhatsApp Cloud API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "WhatsApp message received": {
+      "main": [
+        [
+          {
+            "node": "Is it text?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it text?": {
+      "main": [
+        [
+          {
+            "node": "From WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ask for text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "From WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Ask the support agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask the support agent": {
+      "main": [
+        [
+          {
+            "node": "Send the reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

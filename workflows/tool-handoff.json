@@ -1,0 +1,259 @@
+{
+  "id": "waToolHandoff001",
+  "name": "Tool: hand off to the team",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "1a7c7b2e-e49c-5cd9-9ae0-0dff2f3912f2",
+      "name": "Called by agent",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "kind",
+              "type": "string"
+            },
+            {
+              "name": "summary",
+              "type": "string"
+            },
+            {
+              "name": "customer_message",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "channel",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e6eaab1d-9a47-5f56-8934-f177341ba173",
+      "name": "Ensure tickets table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "support_tickets",
+        "columns": {
+          "column": [
+            {
+              "name": "kind",
+              "type": "string"
+            },
+            {
+              "name": "summary",
+              "type": "string"
+            },
+            {
+              "name": "customer_message",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "channel",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      }
+    },
+    {
+      "id": "a296cf76-16e9-52b3-891e-7568fe3259a4",
+      "name": "Add ticket",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "support_tickets"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "kind": "={{ ['refund', 'escalation'].includes($('Called by agent').first().json.kind) ? $('Called by agent').first().json.kind : 'escalation' }}",
+            "summary": "={{ $('Called by agent').first().json.summary }}",
+            "customer_message": "={{ $('Called by agent').first().json.customer_message }}",
+            "phone": "={{ $('Called by agent').first().json.phone }}",
+            "channel": "={{ $('Called by agent').first().json.channel }}",
+            "status": "open"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "kind",
+              "displayName": "kind",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "customer_message",
+              "displayName": "customer_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "notes": "Swap for Google Sheets (append row) or Slack (post message) to route tickets elsewhere."
+    },
+    {
+      "id": "98f12c7b-141e-54f8-82fd-69d56df578f1",
+      "name": "Ticket for the agent",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "46659761-89e6-5486-8b73-a87471921ea6",
+              "name": "ticket_id",
+              "value": "=TKT-{{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "1b967c6d-a0ad-5f31-a2f3-a8e773d5e6fa",
+              "name": "kind",
+              "value": "={{ $json.kind }}",
+              "type": "string"
+            },
+            {
+              "id": "7af0d86d-c5d8-5a6d-96aa-16a3c91ff634",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Called by agent": {
+      "main": [
+        [
+          {
+            "node": "Ensure tickets table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure tickets table": {
+      "main": [
+        [
+          {
+            "node": "Add ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add ticket": {
+      "main": [
+        [
+          {
+            "node": "Ticket for the agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,378 @@
+{
+  "id": "waSupportAgent01",
+  "name": "Support agent",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "132eaba3-37cc-5b59-8fb7-ba2b9c34f1a1",
+      "name": "Called by a channel",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "text",
+              "type": "string"
+            },
+            {
+              "name": "session_id",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "channel",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1b219256-a770-52b9-8dfa-add9aab85ace",
+      "name": "Support agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=You are the support assistant of Prana Path, a fictional Indian wellness brand used in this demo. Prana Path sells self-paced wellness programs for a one-time payment. Today is {{ $now.setZone('Asia/Kolkata').toFormat('cccc d LLLL yyyy') }} in India.\n\nLanguage: reply in the language and script the customer writes in. Devanagari Hindi gets Devanagari Hindi, Hinglish in Latin letters gets Hinglish, English gets English. Keep replies short enough for WhatsApp: at most five short sentences, or a short list.\n\nTools:\n- search_faq: the only source for programs, prices, access, payments, refunds, and support hours. Always write its query in English, whatever language the customer uses. Answer only from what it returns; if it does not answer the question, say so and offer to pass the chat to the team.\n- lookup_purchases: the payments made from the customer's verified phone number. It needs no input. Use it whenever the customer asks about a payment, a charge, an order, or access to something they bought. When you mention a payment, quote its payment id.\n- hand_off: opens a ticket for the human team. Use kind \"refund\" when the customer wants their money back. Use kind \"escalation\" when the customer is upset, asks for a person, or needs something the FAQ does not cover. Tell the customer the ticket id and when the team will reply, as the FAQ states.\n\nRules:\n- Never invent prices, policies, dates, or payment details.\n- Never ask for card numbers, UPI PINs, OTPs, or passwords.\n- Before opening a refund ticket, check the purchase with lookup_purchases and the refund policy with search_faq. Open the ticket even when the request falls outside the policy, and say the team will review it.",
+          "maxIterations": 8
+        }
+      }
+    },
+    {
+      "id": "4d18d506-2bca-52cc-b9b2-c395e61195e0",
+      "name": "Reply",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b4735a3f-99f0-5e7a-b3f2-5000dcd248ac",
+              "name": "reply",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c1d93cde-b6e9-5661-ba1c-ece60c08f69b",
+      "name": "Chat model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        160,
+        240
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-5-mini"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "waLlmOpenAiCompt",
+          "name": "LLM (OpenAI-compatible)"
+        }
+      },
+      "notes": "Any OpenAI-compatible Chat Completions endpoint: set its base URL in the credential."
+    },
+    {
+      "id": "059d4dec-adfe-5d51-a586-c340e9b1f4fe",
+      "name": "Conversation memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        240
+      ],
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Called by a channel').first().json.session_id }}",
+        "contextWindowLength": 10
+      }
+    },
+    {
+      "id": "72631b0a-c70d-5a2a-9dd1-62449a1ddb9c",
+      "name": "search_faq",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        240
+      ],
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search the Prana Path help centre: programs, prices, access, payments, refunds, and support hours. Write the query in English.",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "support-faq",
+          "cachedResultName": "support-faq"
+        },
+        "topK": 4
+      }
+    },
+    {
+      "id": "5a791d4d-f4e3-5051-bdd1-ac553ed7a713",
+      "name": "FAQ embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        480,
+        440
+      ],
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "credentials": {
+        "ollamaApi": {
+          "id": "waOllamaLocal001",
+          "name": "Ollama (local)"
+        }
+      }
+    },
+    {
+      "id": "9ed54c58-41df-51bc-be36-c9f4f56103bf",
+      "name": "lookup_purchases",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        240
+      ],
+      "parameters": {
+        "description": "List the payments made from the customer's verified phone number, with product, amount, status, and access. Takes no input.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "waToolPurchases1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('Called by a channel').first().json.phone }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        }
+      }
+    },
+    {
+      "id": "95cdedda-76df-5493-820c-3da5938c5ce7",
+      "name": "hand_off",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        940,
+        240
+      ],
+      "parameters": {
+        "description": "Open a ticket for the human support team and get its ticket id. Use kind refund for refund requests and kind escalation for everything else a person must handle.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "waToolHandoff001"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "kind": "={{ $fromAI('kind', 'refund when the customer wants their money back, otherwise escalation', 'string') }}",
+            "summary": "={{ $fromAI('summary', 'Two or three sentences for the support team: what the customer wants, which payment id it concerns, and what you already told them', 'string') }}",
+            "customer_message": "={{ $('Called by a channel').first().json.text }}",
+            "phone": "={{ $('Called by a channel').first().json.phone }}",
+            "channel": "={{ $('Called by a channel').first().json.channel }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "kind",
+              "displayName": "kind",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "customer_message",
+              "displayName": "customer_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Called by a channel": {
+      "main": [
+        [
+          {
+            "node": "Support agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Support agent": {
+      "main": [
+        [
+          {
+            "node": "Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Support agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Support agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_faq": {
+      "ai_tool": [
+        [
+          {
+            "node": "Support agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAQ embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "search_faq",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "lookup_purchases": {
+      "ai_tool": [
+        [
+          {
+            "node": "Support agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "hand_off": {
+      "ai_tool": [
+        [
+          {
+            "node": "Support agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

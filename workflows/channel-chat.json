@@ -1,0 +1,209 @@
+{
+  "id": "waChannelChat001",
+  "name": "Channel: hosted chat",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "d6c48cea-76f1-58ab-a9a5-a7165ac7ff9d",
+      "name": "Chat as the demo customer",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "public": true,
+        "mode": "hostedChat",
+        "authentication": "none",
+        "initialMessages": "Namaste! I am the Prana Path assistant, a demo with a fictional brand and sample data.\nYou are chatting as sample customer Asha, +91 10000 00001.\nAsk in English or Hindi about our programs, your payment, or a refund.",
+        "options": {
+          "responseMode": "lastNode",
+          "title": "Prana Path support (demo)",
+          "subtitle": "AI assistant. Fictional brand, sample data.",
+          "inputPlaceholder": "Type your question...",
+          "customCss": ":root {\n  --chat--color--primary: #d9822b;\n  --chat--color--primary-shade-50: #c4731f;\n  --chat--color--primary--shade-100: #a8621a;\n  --chat--color--secondary: #13685d;\n  --chat--color-secondary-shade-50: #0f574e;\n  --chat--color-dark: #0b3d37;\n  --chat--color-typing: #13685d;\n  --chat--header--background: linear-gradient(135deg, #0b3d37 0%, #13685d 100%);\n  --chat--header--color: #ffffff;\n  --chat--header--padding: 18px 20px;\n  --chat--heading--font-size: 1.4em;\n  --chat--subtitle--font-size: 0.9em;\n  --chat--body--background: #f3f6f4;\n  --chat--message--font-size: 0.95rem;\n  --chat--message--padding: 10px 14px;\n  --chat--message--border-radius: 14px;\n  --chat--message--bot--background: #ffffff;\n  --chat--message--bot--color: #1d2b28;\n  --chat--message--bot--border: 1px solid #e1e8e5;\n  --chat--message--user--background: #13685d;\n  --chat--message--user--color: #ffffff;\n  --chat--input--send--button--color: #d9822b;\n  --chat--input--send--button--color-hover: #a8621a;\n  --chat--footer--background: #ffffff;\n}\n\n.chat-message {\n  max-width: 85%;\n}\n\n.chat-layout .chat-header {\n  height: auto;\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  box-shadow: 0 2px 10px rgba(11, 61, 55, 0.22);\n  position: relative;\n  z-index: 1;\n}\n\n.chat-layout .chat-header h1 {\n  margin: 0;\n  font-weight: 600;\n}\n\n.chat-layout .chat-header p {\n  margin: 0;\n  opacity: 0.85;\n}\n"
+        }
+      },
+      "webhookId": "5b1f3c2e-9a47-4d8e-b6a0-2f7c1d9e4a11"
+    },
+    {
+      "id": "20a6e7e7-5930-598b-9a0b-bc8f12143a41",
+      "name": "Demo customer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "999e7b0a-7e53-5401-8fe5-1546be95ec61",
+              "name": "text",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "d9e7abd7-b160-5552-b09e-ce744ad0998f",
+              "name": "session_id",
+              "value": "=chat:{{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "77b029f0-62f1-5964-8295-0e9626bd4dd8",
+              "name": "phone",
+              "value": "+91 10000 00001",
+              "type": "string"
+            },
+            {
+              "id": "81e81f78-2eb2-57db-bf45-9ce83cdec94f",
+              "name": "channel",
+              "value": "chat",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "notes": "The hosted chat has no verified phone number, so it speaks as one labelled sample customer."
+    },
+    {
+      "id": "7bb15234-d515-5d9b-bca1-4edd59c37cac",
+      "name": "Ask the support agent",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "waSupportAgent01"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.text }}",
+            "session_id": "={{ $json.session_id }}",
+            "phone": "={{ $json.phone }}",
+            "channel": "={{ $json.channel }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "9aa0ef43-df08-573b-8997-50d069f149f0",
+      "name": "Answer in chat",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "df13bb63-e9d2-5dbd-a7c5-765c3c529777",
+              "name": "output",
+              "value": "={{ $json.reply }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Chat as the demo customer": {
+      "main": [
+        [
+          {
+            "node": "Demo customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Demo customer": {
+      "main": [
+        [
+          {
+            "node": "Ask the support agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask the support agent": {
+      "main": [
+        [
+          {
+            "node": "Answer in chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
